@@ -57,6 +57,10 @@ void eval(char *cmdline)
             // char pathEnvp[5 + 1 + strlen(getEnvVariable("$PATH"))];
             // strcpy(pathEnvp, "PATH=");
             // strcat(pathEnvp, getEnvVariable("$PATH"));
+            if(argv[1] != NULL && *argv[1] == '$'){
+                argv[1] = getEnvVariable(argv[1]);
+                // printf("%s\n", argv[1]);
+            }
             if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
