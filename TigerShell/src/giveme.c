@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
     while (1) {
       fprintf(stdout,"I want %s!\n", argv[1]);
       sleep(1);
+      fflush(stdout);
     }
 
     return 0;
