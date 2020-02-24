@@ -12,6 +12,7 @@ char *prompt = "lsh";
 
 void SIGINT_handler(int sig){
     printf("got SIGINT");
+    exit(0);
 }
 
 void SIGTSTP_handler(int sig){
@@ -50,11 +51,13 @@ void eval(char *cmdline)
     if (argv[0] == NULL)  
 	return;   /* Ignore empty lines */
 
-
-
     if (!builtin_command(argv)) { 
         if ((pid = Fork()) == 0) {   /* Child runs user job */
-            if (execve(argv[0], argv, environ) < 0) {
+            // printf("%d\n", strlen(getEnvVariable("$PATH")));
+            // char pathEnvp[5 + 1 + strlen(getEnvVariable("$PATH"))];
+            // strcpy(pathEnvp, "PATH=");
+            // strcat(pathEnvp, getEnvVariable("$PATH"));
+            if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
             }
@@ -79,6 +82,7 @@ int builtin_command(char **argv)
     
     equalSignPos = strchr(argv[0], '=');
     
+    /*set env variable*/
     if(equalSignPos != NULL){
         char desName[equalSignPos - argv[0] + 1];
         char srcName[(int)strlen(argv[0]) - (int)(equalSignPos - argv[0])];
@@ -90,6 +94,7 @@ int builtin_command(char **argv)
             return 1;
         }
         setenv(desName, srcName, 1);
+
         printf("%s\n", "success");
         return 1;
     }
@@ -137,7 +142,6 @@ int parseline(char *buf, char **argv)
 }
 
 char* getEnvVariable(char *inputArgv){
-    printf("%s\n", inputArgv);
     char *input = inputArgv;
     char *returnArray = NULL;
     char *dollarSignPos = NULL;
@@ -150,3 +154,4 @@ char* getEnvVariable(char *inputArgv){
     return returnArray;
 }
 /* $end parseline */
+
