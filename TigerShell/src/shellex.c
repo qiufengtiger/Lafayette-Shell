@@ -10,11 +10,20 @@ char* getEnvVariable(char *inputArgv);
 
 char *prompt = "lsh";
 
+void SIGINT_handler(int sig){
+    printf("got SIGINT");
+}
+
+void SIGTSTP_handler(int sig){
+    printf("got SIGTSTP");
+}
+
 int main() 
 {
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
-
+    signal(SIGINT, SIGINT_handler); // CTRL-C
+    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z
     while (1) {
 	   /* Read */
 	   printf("%s> ",getenv("lshprompt"));                   
