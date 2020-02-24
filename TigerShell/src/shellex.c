@@ -2,11 +2,12 @@
 #include "csapp.h"
 #define MAXARGS   128
 
-//new branch comment
 /* Function prototypes */
 void eval(char *cmdline);
 int parseline(char *buf, char **argv);
 int builtin_command(char **argv); 
+char* getEnvVariable(char *inputArgv);
+
 char *prompt = "lsh";
 
 int main() 
@@ -44,14 +45,6 @@ void eval(char *cmdline)
 
     if (!builtin_command(argv)) { 
         if ((pid = Fork()) == 0) {   /* Child runs user job */
-            // char *commandWithPath = "/bin/";
-            // char *inputCommand = argv[0];
-            
-            // printf("%s\n", inputCommand);
-            // printf("%s\n", commandWithPath);
-            
-
-
             if (execve(argv[0], argv, environ) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
@@ -74,9 +67,9 @@ void eval(char *cmdline)
 int builtin_command(char **argv) 
 {
     char *equalSignPos = NULL;
-    char *dollarSignPos = NULL;
+    
     equalSignPos = strchr(argv[0], '=');
-    dollarSignPos = strchr(argv[1], '$');
+    
     if(equalSignPos != NULL){
         char desName[equalSignPos - argv[0] + 1];
         char srcName[(int)strlen(argv[0]) - (int)(equalSignPos - argv[0])];
@@ -90,14 +83,6 @@ int builtin_command(char **argv)
         setenv(desName, srcName, 1);
         printf("%s\n", "success");
         return 1;
-    }
-
-    if(dollarSignPos !=NULL){
-	char srcName[(int)strlen(argv[1]) - (int)(dollarSignPos - argv[1])];
-	strcpy(srcName, dollarSignPos + 1);
-	argv[1] = getenv(srcName);
-	
-	
     }
 
 
@@ -140,5 +125,18 @@ int parseline(char *buf, char **argv)
 	argv[--argc] = NULL;
 
     return bg;
+}
+
+char* getEnvVariable(char *inputArgv){
+    printf("%s\n", inputArgv);
+    char *returnArray = NULL;
+    char *dollarSignPos = NULL;
+    dollarSignPos = strchr(input, '$');
+    if(dollarSignPos !=NULL){
+       char srcName[(int)strlen(input) - (int)(dollarSignPos - input)];
+       strcpy(srcName, dollarSignPos + 1);
+       returnArray = getenv(srcName);
+    }
+    return returnArray;
 }
 /* $end parseline */
