@@ -7,12 +7,16 @@ void eval(char *cmdline);
 int parseline(char *buf, char **argv);
 int builtin_command(char **argv); 
 char* getEnvVariable(char *inputArgv);
+int assignJid();
 
 char *prompt = "lsh";
+int thisJid = -1;
+pid_t thisPid = -1;
 
 void SIGINT_handler(int sig){
-    printf("got SIGINT");
-    exit(0);
+    if(thisPid == -1)
+        exit(0);
+    printf("Job %%%d / pid %d terminated by signal\n", thisJid, thisPid);
 }
 
 void SIGTSTP_handler(int sig){
@@ -23,8 +27,10 @@ int main()
 {
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
+
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z
+
     while (1) {
 	   /* Read */
 	   printf("%s> ",getenv("lshprompt"));                   
@@ -44,19 +50,21 @@ void eval(char *cmdline)
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
-    pid_t pid;           /* Process id */
-    
+    int pid;
+
     strcpy(buf, cmdline);
     bg = parseline(buf, argv); 
     if (argv[0] == NULL)  
 	return;   /* Ignore empty lines */
 
     if (!builtin_command(argv)) { 
-        if ((pid = Fork()) == 0) {   /* Child runs user job */
-            // printf("%d\n", strlen(getEnvVariable("$PATH")));
-            // char pathEnvp[5 + 1 + strlen(getEnvVariable("$PATH"))];
-            // strcpy(pathEnvp, "PATH=");
-            // strcat(pathEnvp, getEnvVariable("$PATH"));
+        // child job
+        thisJid = assignJid();
+        if ((pid = Fork()) == 0) {    
+            thisPid = getpid();
+            printf("%d\n", getpgid(thisPid));
+            printf("Process id: %d created!\n", thisPid);
+            printf("Job id: %d created!\n", thisJid);
             if(argv[1] != NULL && *argv[1] == '$'){
                 argv[1] = getEnvVariable(argv[1]);
                 // printf("%s\n", argv[1]);
@@ -65,6 +73,10 @@ void eval(char *cmdline)
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
             }
+        }
+        // parent job
+        else{
+            thisPid = getpid();
         }
 
 	/* Parent waits for foreground job to terminate */
@@ -156,6 +168,10 @@ char* getEnvVariable(char *inputArgv){
        returnArray = getenv(srcName);
     }
     return returnArray;
+}
+
+int assignJid(){
+    return nextJid++;
 }
 /* $end parseline */
 

@@ -24,6 +24,7 @@
 /* $begin csapp.c */
 #include "csapp.h"
 
+int nextJid = 1;
 /************************** 
  * Error-handling functions
  **************************/
