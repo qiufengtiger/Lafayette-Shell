@@ -129,6 +129,7 @@ int parseline(char *buf, char **argv)
 
 char* getEnvVariable(char *inputArgv){
     printf("%s\n", inputArgv);
+    char *input = inputArgv;
     char *returnArray = NULL;
     char *dollarSignPos = NULL;
     dollarSignPos = strchr(input, '$');
