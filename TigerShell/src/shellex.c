@@ -38,6 +38,7 @@ int main()
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z
+    printf("%d\n", findAvailable());
     while (1) {
 	   /* Read */
 	   printf("%s> ",getenv("lshprompt"));                   
@@ -57,7 +58,9 @@ void eval(char *cmdline)
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
+    // child data after fork
     int pid;
+    int jid;
 
     strcpy(buf, cmdline);
     bg = parseline(buf, argv); 
@@ -73,12 +76,14 @@ void eval(char *cmdline)
 
     if (!builtin_command(argv)) { 
         // child job
-        thisJid = assignJid();
+        jid = assignJid();
+        printf("Job id: %d created!\n", thisJid);
         if ((pid = Fork()) == 0) {    
             thisPid = getpid();
             // printf("%d\n", getpgid(thisPid));
-            printf("Process id: %d created!\n", thisPid);
-            printf("Job id: %d created!\n", thisJid);
+            printf("Process id: %d created!\n", thisPid);   
+            
+            // printf("%d\n", jobList[3].jid);
             if(argv[1] != NULL && *argv[1] == '$'){
                 argv[1] = getEnvVariable(argv[1]);
                 // printf("%s\n", argv[1]);
@@ -90,6 +95,8 @@ void eval(char *cmdline)
         }
         // parent job
         else{
+            addJob(jid, pid, argv[0]);
+            testPrint(jid - 1);
             thisPid = getpid();
         }
 

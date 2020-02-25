@@ -3,8 +3,12 @@
 
 #define JOB_LIST_SIZE 50
 #define JOB_COMMAND_SIZE 20
+#define RUNNING 1
+#define STOPPED 2
 
 #include <time.h>
+#include <string.h>
+#include <stdio.h>
 
 
 typedef struct jobData_struct
@@ -27,6 +31,8 @@ int deleteJob(int idInput);
 int jobs();
 int printJob(jobData jobDataInput);
 int findAvailable();
+
+int testPrint(int input);
 
 
 
