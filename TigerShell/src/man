@@ -1,0 +1,17 @@
+.TH man 8 "24 Feb 2020" "1.0" "lsh man page"
+.SH NAME
+lsh - Lafayette Shell
+.SH DESCRIPTION
+lafayette shell constains basic linux bash commands. It also supports processes control, pipline and job switches.
+.SH SETTING UP
+To set up the lsh: run the following command in the project src directory:
+    |-------------------------------
+    | > make shell
+    | .
+    | .
+    | .
+|-------------------------------
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Vivek Gite (vivek@nixcraft.net.in)
