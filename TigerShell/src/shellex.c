@@ -11,8 +11,8 @@ char* getEnvVariable(char *inputArgv);
 int assignJid();
 
 char *prompt = "lsh";
-int thisJid = -1;
-pid_t thisPid = -1;
+int thisJid = -1; // current process pid
+pid_t thisPid = -1; // current process jid
 volatile int shutdownFlag;
 
 // add a - sign in front of the pid to kill the entire group
@@ -46,6 +46,7 @@ int main()
 	   if (feof(stdin))
 	       exit(0);
 	   /* Evaluate */
+       // printf("print cmdline: %s\n", cmdline);
 	   eval(cmdline);
     } 
 }
@@ -58,9 +59,8 @@ void eval(char *cmdline)
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
-    // child data after fork
-    int pid;
-    int jid;
+    int pid; // child process pid
+    int jid; // child process jid
 
     strcpy(buf, cmdline);
     bg = parseline(buf, argv); 
@@ -77,7 +77,7 @@ void eval(char *cmdline)
     if (!builtin_command(argv)) { 
         // child job
         jid = assignJid();
-        printf("Job id: %d created!\n", thisJid);
+        printf("Job id: %d created!\n", jid);
         if ((pid = Fork()) == 0) {    
             thisPid = getpid();
             // printf("%d\n", getpgid(thisPid));
@@ -104,7 +104,9 @@ void eval(char *cmdline)
 	if (!bg) {
 	    int status;
 	    if (waitpid(pid, &status, 0) < 0)
-		unix_error("waitfg: waitpid error");
+		  unix_error("waitfg: waitpid error");
+        else 
+            deleteJob(pid);
 	}
 	else
 	    printf("%d %s", pid, cmdline);
@@ -137,7 +139,12 @@ int builtin_command(char **argv)
     }
     /* jobs */
     else if(!strcmp(argv[0], "jobs")){
-
+        jobs();
+        return 1;
+    }
+    else if(!strcmp(argv[0], "jsum")){
+        jsum();
+        return 1;
     }
     /* quit */
     else if(!strcmp(argv[0], "quit"))
@@ -173,7 +180,7 @@ int parseline(char *buf, char **argv)
     argv[argc] = NULL;
     
     if (argc == 0)  /* Ignore blank line */
-	return 1;
+	   return 1;
 
     /* Should the job run in the background? */
     if ((bg = (*argv[argc-1] == '&')) != 0)

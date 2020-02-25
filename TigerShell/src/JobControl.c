@@ -21,20 +21,32 @@ int addJob(int jidInput, int pidInput, char* commandInput){
 	return 1;
 }
 
+int deleteJob(int idInput){
+	// check both jid and pid
+	int i = 0;
+	for(i = 0; i < JOB_LIST_SIZE; i++){
+		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
+			jobList[i].jid = 0; // jid = 0 will be seen as empty
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int printJob(jobData jobDataInput){ 
-	printf("%5d",jobDataInput.jid);
-	printf("%5d",jobDataInput.pid);
-	printf("%7d",jobDataInput.state);
-	printf("%7s/n",jobDataInput.commandName);
+	printf("%10d",jobDataInput.jid);
+	printf("%10d",jobDataInput.pid);
+	printf("%15d",jobDataInput.state);
+	printf("%15s\n",jobDataInput.commandName);
 	return 0;
 
 }
 
 int jobs(){
-	printf("%5s","JID");
-	printf("%5s","PID");
-	printf("%7s","status");
-	printf("%7s/n","command");
+	printf("%10s","JID");
+	printf("%10s","PID");
+	printf("%15s","status");
+	printf("%15s\n","command");
 	for (int i = 0; i < 50; ++i){
 		if(jobList[i].jid !=0){
 			printJob(jobList[i]);
@@ -58,23 +70,23 @@ int testPrint(int input){
 	return 0;
 }
 int printJsum(jobData jobDataInput){
-	printf("%5d",jobDataInput.pid);
-	printf("%5d",jobDataInput.state);
-	printf("%10f",(double)(clock()-jobDataInput.startTime));
+	printf("%10d",jobDataInput.pid);
+	printf("%10d",jobDataInput.state);
+	printf("%15f",(double)(clock()-jobDataInput.startTime));
 	printf("%10d",jobDataInput.minFault);
 	printf("%10d",jobDataInput.maxFault);
-	printf("%7s/n",jobDataInput.commandName);
+	printf("%15s\n",jobDataInput.commandName);
 	return 0;
 
 }
 
 int jsum(){
-	printf("%5s","PID");
-	printf("%5s","status"); 
-	printf("%10s","ElapsedTime");
+	printf("%10s","PID");
+	printf("%10s","status"); 
+	printf("%15s","ElapsedTime");
 	printf("%10s","Min Fault");
 	printf("%10s","Max Fault");
-	printf("%7s/n","commandName");
+	printf("%15s\n","commandName");
 	for (int i = 0; i < 50; ++i){
 		if(jobList[i].jid !=0){
 			printJsum(jobList[i]);
