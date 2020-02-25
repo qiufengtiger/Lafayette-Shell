@@ -12,19 +12,26 @@ int assignJid();
 char *prompt = "lsh";
 int thisJid = -1;
 pid_t thisPid = -1;
+volatile int shutdownFlag;
 
+// add a - sign in front of the pid to kill the entire group
 void SIGINT_handler(int sig){
     if(thisPid == -1)
         exit(0);
     printf("Job %%%d / pid %d terminated by signal\n", thisJid, thisPid);
+    shutdownFlag= 1;
 }
 
 void SIGTSTP_handler(int sig){
-    printf("got SIGTSTP");
+    if(thisPid == -1)
+        exit(0);
+    printf("Job %%%d / pid %d stopped by signal\n", thisJid, thisPid);
+    shutdownFlag = 2;
 }
 
 int main() 
 {
+    shutdownFlag = 0;
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
 
@@ -57,12 +64,19 @@ void eval(char *cmdline)
     if (argv[0] == NULL)  
 	return;   /* Ignore empty lines */
 
+    if(shutdownFlag == 1){
+        Kill(0 - (int)thisPid, SIGINT);
+    }
+    else if(shutdownFlag == 2){
+        Kill(0 - (int)thisPid, SIGTSTP);
+    }
+
     if (!builtin_command(argv)) { 
         // child job
         thisJid = assignJid();
         if ((pid = Fork()) == 0) {    
             thisPid = getpid();
-            printf("%d\n", getpgid(thisPid));
+            // printf("%d\n", getpgid(thisPid));
             printf("Process id: %d created!\n", thisPid);
             printf("Job id: %d created!\n", thisJid);
             if(argv[1] != NULL && *argv[1] == '$'){
@@ -98,7 +112,7 @@ int builtin_command(char **argv)
     
     equalSignPos = strchr(argv[0], '=');
     
-    /*set env variable*/
+    /* set env variable */
     if(equalSignPos != NULL){
         char desName[equalSignPos - argv[0] + 1];
         char srcName[(int)strlen(argv[0]) - (int)(equalSignPos - argv[0])];
@@ -114,13 +128,17 @@ int builtin_command(char **argv)
         printf("%s\n", "success");
         return 1;
     }
+    /* jobs */
+    else if(!strcmp(argv[0], "jobs")){
 
-
-    if (!strcmp(argv[0], "quit")) /* quit command */
+    }
+    /* quit */
+    else if(!strcmp(argv[0], "quit"))
 	   exit(0);  
-    if (!strcmp(argv[0], "&"))    /* Ignore singleton & */
+    else if(!strcmp(argv[0], "&"))
 	   return 1;
-    return 0;                     /* Not a builtin command */
+    /* not a built in command */
+    return 0;
 }
 /* $end eval */
 
