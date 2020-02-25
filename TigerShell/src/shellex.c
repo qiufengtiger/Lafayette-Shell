@@ -1,5 +1,6 @@
 /* $begin shellmain */
 #include "csapp.h"
+#include "JobControl.h"
 #define MAXARGS   128
 
 /* Function prototypes */
@@ -37,7 +38,6 @@ int main()
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z
-
     while (1) {
 	   /* Read */
 	   printf("%s> ",getenv("lshprompt"));                   

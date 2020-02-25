@@ -54,7 +54,6 @@ typedef struct {
 /* External variables */
 extern int h_errno;    /* Defined by BIND for DNS errors */ 
 extern char **environ; /* Defined by libc */
-extern int nextJid;
 
 /* Misc constants */
 #define	MAXLINE	 8192  /* Max text line length */
