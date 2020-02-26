@@ -3,6 +3,7 @@
 
 int nextJid = 1;
 jobData jobList[50];
+jobData allJobs[100];
 
 
 int addJob(int jidInput, int pidInput, char* commandInput){
@@ -16,6 +17,7 @@ int addJob(int jidInput, int pidInput, char* commandInput){
 	thisJobData.maxFault = 0;
 	strcpy(thisJobData.commandName, commandInput);
 	jobList[pos] = thisJobData;
+	allJobs[pos] = thisJobData;
 	// printf("jid: %d\n", jobList[pos].jid);
 	// printf("pos: %d\n", pos);
 	return 1;
@@ -70,16 +72,17 @@ int testPrint(int input){
 	return 0;
 }
 int printJsum(jobData jobDataInput){
-	int seconds = (int)(clock()-jobDataInput.startTime);
+	int seconds = (int)(time(0)-jobDataInput.startTime);
 	int hours = seconds/(60*60);
 	int remained = seconds-hours*60*60;
 	int minutes = remained/60;
+
 	remained = remained-minutes*60;
 	printf("%10d",jobDataInput.pid);
 	printf("%10d",jobDataInput.state);
-	printf("%3d:%3d:%9d",hours,minutes,remained);
-	printf("%10d",jobDataInput.minFault);
-	printf("%10d",jobDataInput.maxFault);
+	printf("%15d:%d:%d",hours,minutes,remained);
+	printf("%13d",jobDataInput.minFault);
+	printf("%13d",jobDataInput.maxFault);
 	printf("%15s\n",jobDataInput.commandName);
 	return 0;
 
@@ -88,13 +91,13 @@ int printJsum(jobData jobDataInput){
 int jsum(){
 	printf("%10s","PID");
 	printf("%10s","status"); 
-	printf("%15s","ElapsedTime");
-	printf("%10s","Min Fault");
-	printf("%10s","Max Fault");
+	printf("%19s","ElapsedTime");
+	printf("%13s","Min Fault");
+	printf("%13s","Max Fault");
 	printf("%15s\n","commandName");
 	for (int i = 0; i < 50; ++i){
-		if(jobList[i].jid !=0){
-			printJsum(jobList[i]);
+		if(allJobs[i].jid !=0){
+			printJsum(allJobs[i]);
 		}
     		
   	} 

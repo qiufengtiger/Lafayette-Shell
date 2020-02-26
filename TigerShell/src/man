@@ -5,13 +5,19 @@ lsh - Lafayette Shell
 lafayette shell constains basic linux bash commands. It also supports processes control, pipline and job switches.
 .SH SETTING UP
 To set up the lsh: run the following command in the project src directory:
-    |-------------------------------
-    | > make shell
-    | .
-    | .
-    | .
-|-------------------------------
+    	|-------------------------------
+    	| > make shell
+    	| .
+    	| .
+    	| .
+	|-------------------------------
 .SH BUGS
 No known bugs.
 .SH AUTHOR
-Vivek Gite (vivek@nixcraft.net.in)
+zhouj@lafayette.edu, quif@lafayette.edu
+
+.B jsum
+reports process statistics on each external command (job) completed since the shell started.
+
+.B jobs
+lists all background and suspended jobs
