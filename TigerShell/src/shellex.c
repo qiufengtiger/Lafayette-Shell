@@ -18,24 +18,10 @@ int thisJid = -1; // current process pid
 pid_t thisPid = -1; // current process jid
 int pid; // child process pid
 int jid; // child process jid
+int bg;              /* Should the job run in bg or fg? */
 
-
-// volatile int shutdownFlag;
-
-// add a - sign in front of the pid to kill the entire group
-// void SIGINT_handler_child(int sig){
-//     printf("Job %d / pid %d killed: signal received\n", jid, pid);
-//     shutdownFlag = 1;
-//     // Kill(0 - (int)pid, SIGINT);
-// }
-
-// void SIGTSTP_handler_child(int sig){
-//     printf("Job %d / pid %d stopped: signal received\n", jid, pid);
-//     // shutdownFlag = 2;
-//     // Kill(0 - (int)pid, SIGTSTP);
-// }
 void SIGINT_handler(int sig){
-    printf("pid in sig handler: %d\n", pid);
+    printf("pid in sig handler: %d, called in %d\n", pid, getpid());
     Kill(pid, sig);
     
 }
@@ -45,13 +31,17 @@ void SIGTSTP_handler(int sig){
     Kill(pid, sig);
 }
 
+// void SIGCHLD_handler(int sig){
+
+// }
+
 
 int main() 
 {   
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z  
-    signal(SIGCHLD, SIGCHLD_handler); // CTRL-Z 
+    // signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
 
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
@@ -73,13 +63,12 @@ void eval(char *cmdline)
 {
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */
-    int bg;              /* Should the job run in bg or fg? */
+    
     
      
 
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
-    printf("bg: %d\n", bg); 
     if (argv[0] == NULL)  
 	return;   /* Ignore empty lines */    
 
@@ -98,24 +87,30 @@ void eval(char *cmdline)
             //     Kill(0 - (int)pid, SIGTSTP);
             // }
    
-            printf("Process id: %d created!\n", getpid());   
-            printf("Job id: %d created!\n", jid);
+            // printf("Process id: %d created!\n", getpid());   
+            // printf("Job id: %d created!\n", jid);
 
             
-
-
-            // printf("%d\n", jobList[3].jid);
             if(argv[1] != NULL && *argv[1] == '$'){
                 argv[1] = getEnvVariable(argv[1]);
-                // printf("%s\n", argv[1]);
             }
-            if(*argv[2] == '>'){ // redirect output to file
+            else if(*argv[2] == '>'){ // redirect output to file
+                // printf("in > condition\n");
                 int fd = open(argv[3], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 dup2(fd, 1);
                 dup2(fd, 2);
                 close(fd);
+                // printf("out > condition\n");                
                 argv[2] = NULL;
                 argv[3] = NULL;
+
+            }
+
+            printf("bg: %d\n", bg);
+            if(bg){
+                printf("pgid1: %d\n", getpgid(getpid()));
+                setpgid(getpid(), 0);
+                printf("pgid2: %d\n", getpgid(getpid()));
             }
             if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
@@ -124,22 +119,21 @@ void eval(char *cmdline)
         }
         // parent job
         else{
-            if(bg){
-                printf("bg signal sent\n");
-                Kill(pid, SIGCONT);
-            }
+            // if(bg){
+            //     printf("bg signal sent\n");
+            //     Kill(pid, SIGCONT);
+            // }
             addJob(jid, pid, argv[0]);
+            // printf("parent job addJob complete\n");
         }
 
     	/* Parent waits for foreground job to terminate */
     	if (!bg) {
-    	    int status;
-    	    if (waitpid(pid, &status, 0) < 0)
-    		    unix_error("waitfg: waitpid error");
-            else
-                // job completed / terminated 
-                // deleteJob(pid);
-    	}
+            int status;
+            if (waitpid(pid, &status, WNOHANG) < 0)
+                unix_error("waitfg: waitpid error");
+        }
+        // printf("parent job wait skipped complete\n");
 	    
     }
     return;
