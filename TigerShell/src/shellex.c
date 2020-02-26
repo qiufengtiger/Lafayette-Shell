@@ -13,31 +13,35 @@ int assignJid();
 char *prompt = "lsh";
 int thisJid = -1; // current process pid
 pid_t thisPid = -1; // current process jid
+int pid; // child process pid
+int jid; // child process jid
+
 volatile int shutdownFlag;
 
 // add a - sign in front of the pid to kill the entire group
 void SIGINT_handler(int sig){
-    if(thisPid == -1)
-        exit(0);
-    printf("Job %%%d / pid %d terminated by signal\n", thisJid, thisPid);
-    shutdownFlag= 1;
+    // if(thisPid == -1)
+    //     exit(0);
+    printf("Job %d / pid %d killed by signal in %d\n", jid, pid, thisPid);
+    shutdownFlag = 1;
 }
 
 void SIGTSTP_handler(int sig){
-    if(thisPid == -1)
-        exit(0);
-    printf("Job %%%d / pid %d stopped by signal\n", thisJid, thisPid);
+    // if(thisPid == -1)
+    //     exit(0);
+    printf("Job %d / pid %d stopped by signal\n", jid, pid);
     shutdownFlag = 2;
 }
 
 int main() 
 {
+    signal(SIGINT, SIGINT_handler); // CTRL-C
+    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z 
+    
     shutdownFlag = 0;
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
 
-    signal(SIGINT, SIGINT_handler); // CTRL-C
-    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z
     printf("%d\n", findAvailable());
     while (1) {
 	   /* Read */
@@ -59,26 +63,29 @@ void eval(char *cmdline)
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
-    int pid; // child process pid
-    int jid; // child process jid
+    
+    
 
     strcpy(buf, cmdline);
     bg = parseline(buf, argv); 
     if (argv[0] == NULL)  
 	return;   /* Ignore empty lines */
 
+    printf("st flag %d\n", shutdownFlag);
     if(shutdownFlag == 1){
-        Kill(0 - (int)thisPid, SIGINT);
+        printf("pid %d killed\n", pid);
+        Kill((int)pid, SIGINT);
     }
     else if(shutdownFlag == 2){
-        Kill(0 - (int)thisPid, SIGTSTP);
+        Kill((int)pid, SIGTSTP);
     }
 
     if (!builtin_command(argv)) { 
         // child job
         jid = assignJid();
         printf("Job id: %d created!\n", jid);
-        if ((pid = Fork()) == 0) {    
+        if ((pid = Fork()) == 0) {
+               
             thisPid = getpid();
             // printf("%d\n", getpgid(thisPid));
             printf("Process id: %d created!\n", thisPid);   
@@ -100,16 +107,16 @@ void eval(char *cmdline)
             thisPid = getpid();
         }
 
-	/* Parent waits for foreground job to terminate */
-	if (!bg) {
-	    int status;
-	    if (waitpid(pid, &status, 0) < 0)
-		  unix_error("waitfg: waitpid error");
-        else 
-            deleteJob(pid);
-	}
-	else
-	    printf("%d %s", pid, cmdline);
+    	/* Parent waits for foreground job to terminate */
+    	if (!bg) {
+    	    int status;
+    	    if (waitpid(pid, &status, 0) < 0)
+    		    unix_error("waitfg: waitpid error");
+            else
+                // job completed / terminated 
+                deleteJob(pid);
+    	}
+	    
     }
     return;
 }
