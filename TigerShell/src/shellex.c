@@ -62,11 +62,7 @@ int main()
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS]; /* Argument list execve() */
-    char buf[MAXLINE];   /* Holds modified command line */
-    
-    
-     
-
+    char buf[MAXLINE];   /* Holds modified command line */  
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
     if (argv[0] == NULL)  
@@ -94,23 +90,21 @@ void eval(char *cmdline)
             if(argv[1] != NULL && *argv[1] == '$'){
                 argv[1] = getEnvVariable(argv[1]);
             }
-            else if(*argv[2] == '>'){ // redirect output to file
+            else if(argv[2] != NULL && *argv[2] == '>'){ // redirect output to file
                 // printf("in > condition\n");
                 int fd = open(argv[3], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 dup2(fd, 1);
                 dup2(fd, 2);
-                close(fd);
-                // printf("out > condition\n");                
+                close(fd);               
                 argv[2] = NULL;
                 argv[3] = NULL;
-
             }
 
-            printf("bg: %d\n", bg);
+            // printf("bg: %d\n", bg);
             if(bg){
-                printf("pgid1: %d\n", getpgid(getpid()));
+                // printf("pgid1: %d\n", getpgid(getpid()));
                 setpgid(getpid(), 0);
-                printf("pgid2: %d\n", getpgid(getpid()));
+                // printf("pgid2: %d\n", getpgid(getpid()));
             }
             if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
@@ -130,8 +124,9 @@ void eval(char *cmdline)
     	/* Parent waits for foreground job to terminate */
     	if (!bg) {
             int status;
-            if (waitpid(pid, &status, WNOHANG) < 0)
+            if (waitpid(pid, &status, 0) < 0)
                 unix_error("waitfg: waitpid error");
+            deleteJob(pid);
         }
         // printf("parent job wait skipped complete\n");
 	    
