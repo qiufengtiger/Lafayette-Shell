@@ -70,9 +70,14 @@ int testPrint(int input){
 	return 0;
 }
 int printJsum(jobData jobDataInput){
+    int seconds = (int)(clock()-jobDataInput.startTime));
+    int hours = seconds/(60*60);
+    int remained = seconds-hours*60*60;
+    int minutes = remained/60;
+    remained = remained - minutes*60*60;
 	printf("%10d",jobDataInput.pid);
 	printf("%10d",jobDataInput.state);
-	printf("%15f",(double)(clock()-jobDataInput.startTime));
+	printf("%3d:%3d:%9d",hours,minutes,remained);
 	printf("%10d",jobDataInput.minFault);
 	printf("%10d",jobDataInput.maxFault);
 	printf("%15s\n",jobDataInput.commandName);
