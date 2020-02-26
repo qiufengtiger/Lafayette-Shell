@@ -17,9 +17,10 @@ int addJob(int jidInput, int pidInput, char* commandInput){
 	thisJobData.maxFault = 0;
 	strcpy(thisJobData.commandName, commandInput);
 	jobList[pos] = thisJobData;
-	allJobs[pos] = thisJobData;
+	allJobs[jidInput] = thisJobData;
+	
 	// printf("jid: %d\n", jobList[pos].jid);
-	// printf("pos: %d\n", pos);
+	printf("pos: %d\n", pos);
 	return 1;
 }
 
