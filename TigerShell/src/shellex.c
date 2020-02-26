@@ -1,6 +1,9 @@
 /* $begin shellmain */
 #include "csapp.h"
 #include "JobControl.h"
+#include <fcntl.h>
+#include <sys/types.h>
+
 #define MAXARGS   128
 
 /* Function prototypes */
@@ -16,33 +19,42 @@ pid_t thisPid = -1; // current process jid
 int pid; // child process pid
 int jid; // child process jid
 
-volatile int shutdownFlag;
+
+// volatile int shutdownFlag;
 
 // add a - sign in front of the pid to kill the entire group
+// void SIGINT_handler_child(int sig){
+//     printf("Job %d / pid %d killed: signal received\n", jid, pid);
+//     shutdownFlag = 1;
+//     // Kill(0 - (int)pid, SIGINT);
+// }
+
+// void SIGTSTP_handler_child(int sig){
+//     printf("Job %d / pid %d stopped: signal received\n", jid, pid);
+//     // shutdownFlag = 2;
+//     // Kill(0 - (int)pid, SIGTSTP);
+// }
 void SIGINT_handler(int sig){
-    // if(thisPid == -1)
-    //     exit(0);
-    printf("Job %d / pid %d killed by signal in %d\n", jid, pid, thisPid);
-    shutdownFlag = 1;
+    printf("pid in sig handler: %d\n", pid);
+    Kill(pid, sig);
+    
 }
 
 void SIGTSTP_handler(int sig){
-    // if(thisPid == -1)
-    //     exit(0);
-    printf("Job %d / pid %d stopped by signal\n", jid, pid);
-    shutdownFlag = 2;
+    printf("pid in sig handler: %d\n", pid);
+    Kill(pid, sig);
 }
 
+
 int main() 
-{
+{   
+
     signal(SIGINT, SIGINT_handler); // CTRL-C
-    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z 
-    
-    shutdownFlag = 0;
+    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z  
+    signal(SIGCHLD, SIGCHLD_handler); // CTRL-Z 
+
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
-
-    printf("%d\n", findAvailable());
     while (1) {
 	   /* Read */
 	   printf("%s> ",getenv("lshprompt"));                   
@@ -50,7 +62,6 @@ int main()
 	   if (feof(stdin))
 	       exit(0);
 	   /* Evaluate */
-       // printf("print cmdline: %s\n", cmdline);
 	   eval(cmdline);
     } 
 }
@@ -64,36 +75,47 @@ void eval(char *cmdline)
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
     
-    
+     
 
     strcpy(buf, cmdline);
-    bg = parseline(buf, argv); 
+    bg = parseline(buf, argv);
+    printf("bg: %d\n", bg); 
     if (argv[0] == NULL)  
-	return;   /* Ignore empty lines */
-
-    printf("st flag %d\n", shutdownFlag);
-    if(shutdownFlag == 1){
-        printf("pid %d killed\n", pid);
-        Kill((int)pid, SIGINT);
-    }
-    else if(shutdownFlag == 2){
-        Kill((int)pid, SIGTSTP);
-    }
+	return;   /* Ignore empty lines */    
 
     if (!builtin_command(argv)) { 
-        // child job
         jid = assignJid();
-        printf("Job id: %d created!\n", jid);
         if ((pid = Fork()) == 0) {
-               
-            thisPid = getpid();
-            // printf("%d\n", getpgid(thisPid));
-            printf("Process id: %d created!\n", thisPid);   
+            // signal(SIGINT, SIGINT_handler_child); // CTRL-C
+            // signal(SIGTSTP, SIGTSTP_handler_child); // CTRL-Z     
+
+            // if(shutdownFlag == 1){
+            //     printf("pid %d killed received in process\n", pid);
+            //     exit(0);
+            // }
+            // else if(shutdownFlag == 2){
+            //     printf("pid %d stopped received\n", pid);
+            //     Kill(0 - (int)pid, SIGTSTP);
+            // }
+   
+            printf("Process id: %d created!\n", getpid());   
+            printf("Job id: %d created!\n", jid);
+
             
+
+
             // printf("%d\n", jobList[3].jid);
             if(argv[1] != NULL && *argv[1] == '$'){
                 argv[1] = getEnvVariable(argv[1]);
                 // printf("%s\n", argv[1]);
+            }
+            if(*argv[2] == '>'){ // redirect output to file
+                int fd = open(argv[3], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+                dup2(fd, 1);
+                dup2(fd, 2);
+                close(fd);
+                argv[2] = NULL;
+                argv[3] = NULL;
             }
             if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
@@ -102,9 +124,11 @@ void eval(char *cmdline)
         }
         // parent job
         else{
+            if(bg){
+                printf("bg signal sent\n");
+                Kill(pid, SIGCONT);
+            }
             addJob(jid, pid, argv[0]);
-            testPrint(jid - 1);
-            thisPid = getpid();
         }
 
     	/* Parent waits for foreground job to terminate */
@@ -114,7 +138,7 @@ void eval(char *cmdline)
     		    unix_error("waitfg: waitpid error");
             else
                 // job completed / terminated 
-                deleteJob(pid);
+                // deleteJob(pid);
     	}
 	    
     }
@@ -151,6 +175,13 @@ int builtin_command(char **argv)
     }
     else if(!strcmp(argv[0], "jsum")){
         jsum();
+        return 1;
+    }
+    else if(!strcmp(argv[0], "fg")){
+
+        return 1;
+    }
+    else if(!strcmp(argv[0], "bg")){
         return 1;
     }
     /* quit */
