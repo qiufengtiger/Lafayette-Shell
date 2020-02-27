@@ -86,13 +86,13 @@ void eval(char *cmdline)
    
             // printf("Process id: %d created!\n", getpid());   
             // printf("Job id: %d created!\n", jid);
-
-            
             if(argv[1] != NULL && *argv[1] == '$'){
+                printf("command1: %s\n", argv[0]);
                 argv[1] = getEnvVariable(argv[1]);
             }
-            else if(argv[2] != NULL && *argv[2] == '>'){ // redirect output to file
-                // printf("in > condition\n");
+
+            else if(argv[1] != NULL && argv[2] != NULL && *argv[2] == '>'){ // redirect output to file
+                printf("command2: %s\n", argv[0]);
                 int fd = open(argv[3], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 dup2(fd, 1);
                 dup2(fd, 2);
@@ -107,6 +107,7 @@ void eval(char *cmdline)
                 setpgid(getpid(), 0);
                 // printf("pgid2: %d\n", getpgid(getpid()));
             }
+            // printf("command: %s\n", argv[0]);
             if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
