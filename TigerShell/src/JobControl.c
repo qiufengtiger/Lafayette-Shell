@@ -29,7 +29,9 @@ int deleteJob(int idInput){
 	int i = 0;
 	for(i = 0; i < JOB_LIST_SIZE; i++){
 		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
-			jobList[i].jid = 0; // jid = 0 will be seen as empty
+			if (jobList[i].state == EXIT){
+				jobList[i].jid = 0; // jid = 0 will be seen as empty
+			}
 			return 1;
 		}
 	}
@@ -40,13 +42,13 @@ int printJob(jobData jobDataInput){
 	printf("%10d",jobDataInput.jid);
 	printf("%10d",jobDataInput.pid);
 	if (jobDataInput.state == RUNNING){
-		printf("%10s","RUNNING");
+		printf("%15s","RUNNING");
 	}
 	else if(jobDataInput.state == STOPPED){
-		printf("%10s","STOPPED");
+		printf("%15s","STOPPED");
 	}
 	else{
-		printf("%10s","EXIT");
+		printf("%15s","EXIT");
 	}
 	printf("%15s\n",jobDataInput.commandName);
 	return 0;
@@ -110,7 +112,7 @@ int jsum(){
 	printf("%10s","status"); 
 	printf("%19s","ElapsedTime");
 	printf("%13s","Min Fault");
-	printf("%13s","Max Fault");
+	printf("%13s","Maj Fault");
 	printf("%15s\n","commandName");
 	for (int i = 0; i < 50; ++i){
 		if(allJobs[i].jid !=0){
