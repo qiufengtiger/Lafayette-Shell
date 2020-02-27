@@ -39,7 +39,15 @@ int deleteJob(int idInput){
 int printJob(jobData jobDataInput){ 
 	printf("%10d",jobDataInput.jid);
 	printf("%10d",jobDataInput.pid);
-	printf("%15d",jobDataInput.state);
+	if (jobDataInput.state == RUNNING){
+		printf("%10s","RUNNING");
+	}
+	else if(jobDataInput.state == STOPPED){
+		printf("%10s","STOPPED");
+	}
+	else{
+		printf("%10s","EXIT");
+	}
 	printf("%15s\n",jobDataInput.commandName);
 	return 0;
 
@@ -81,7 +89,7 @@ int printJsum(jobData jobDataInput){
 	remained = remained-minutes*60;
 	printf("%10d",jobDataInput.pid);
 	if (jobDataInput.state == RUNNING){
-		printf("%10s","RUNNING");
+		printf("%10s","ok");
 	}
 	else if(jobDataInput.state == STOPPED){
 		printf("%10s","STOPPED");
