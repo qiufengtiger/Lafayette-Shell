@@ -18,7 +18,8 @@ int thisJid = -1; // current process pid
 pid_t thisPid = -1; // current process jid
 int pid; // child process pid
 int jid; // child process jid
-int bg;              /* Should the job run in bg or fg? */
+int bg;
+int execStatus;
 
 void SIGINT_handler(int sig){
     printf("pid in sig handler: %d, called in %d\n", pid, getpid());
@@ -87,12 +88,10 @@ void eval(char *cmdline)
             // printf("Process id: %d created!\n", getpid());   
             // printf("Job id: %d created!\n", jid);
             if(argv[1] != NULL && *argv[1] == '$'){
-                printf("command1: %s\n", argv[0]);
                 argv[1] = getEnvVariable(argv[1]);
             }
 
             else if(argv[1] != NULL && argv[2] != NULL && *argv[2] == '>'){ // redirect output to file
-                printf("command2: %s\n", argv[0]);
                 int fd = open(argv[3], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 dup2(fd, 1);
                 dup2(fd, 2);
@@ -100,27 +99,19 @@ void eval(char *cmdline)
                 argv[2] = NULL;
                 argv[3] = NULL;
             }
-
-            // printf("bg: %d\n", bg);
             if(bg){
-                // printf("pgid1: %d\n", getpgid(getpid()));
                 setpgid(getpid(), 0);
-                // printf("pgid2: %d\n", getpgid(getpid()));
             }
-            // printf("command: %s\n", argv[0]);
-            if (execvp(argv[0], argv) < 0) {
+            execStatus = execvp(argv[0], argv);
+            if (execStatus < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
             }
         }
         // parent job
         else{
-            // if(bg){
-            //     printf("bg signal sent\n");
-            //     Kill(pid, SIGCONT);
-            // }
-            addJob(jid, pid, argv[0]);
-            // printf("parent job addJob complete\n");
+            if(execStatus >= 0)
+                addJob(jid, pid, argv[0]);
         }
 
     	/* Parent waits for foreground job to terminate */
