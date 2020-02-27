@@ -25,6 +25,7 @@ void SIGINT_handler(int sig){
     printf("pid in sig handler: %d, called in %d\n", pid, getpid());
     Kill(pid, sig);
     jobExit(pid);
+    deleteJob(pid);
 }
 
 void SIGTSTP_handler(int sig){
@@ -33,9 +34,10 @@ void SIGTSTP_handler(int sig){
     jobStopped(pid);
 }
 
-// void SIGCHLD_handler(int sig){
-
-// }
+void SIGKILL_handler(int sig){
+    printf("SIGKILL detected. sent from pid %d\n", pid);
+    deleteJob(pid);
+}
 
 
 int main() 
@@ -43,7 +45,7 @@ int main()
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z  
-    // signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
+    signal(SIGKILL, SIGKILL_handler); // child termination listener 
 
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
@@ -119,7 +121,6 @@ void eval(char *cmdline)
             int status;
             if (waitpid(pid, &status, WUNTRACED) < 0)
                 unix_error("waitfg: waitpid error");
-            deleteJob(pid);
         }
         // printf("parent job wait skipped complete\n");
 	    

@@ -29,9 +29,7 @@ int deleteJob(int idInput){
 	int i = 0;
 	for(i = 0; i < JOB_LIST_SIZE; i++){
 		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
-			if (jobList[i].state == EXIT){
-				jobList[i].jid = 0; // jid = 0 will be seen as empty
-			}
+			jobList[i].jid = 0; // jid = 0 will be seen as empty
 			return 1;
 		}
 	}
