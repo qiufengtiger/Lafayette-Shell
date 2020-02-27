@@ -80,7 +80,15 @@ int printJsum(jobData jobDataInput){
 
 	remained = remained-minutes*60;
 	printf("%10d",jobDataInput.pid);
-	printf("%10d",jobDataInput.state);
+	if (jobDataInput.state == RUNNING){
+		printf("%10s","RUNNING");
+	}
+	else if(jobDataInput.state == STOPPED){
+		printf("%10s","STOPPED");
+	}
+	else{
+		printf("%10s","EXIT");
+	}
 	printf("%15d:%d:%d",hours,minutes,remained);
 	printf("%13d",jobDataInput.minFault);
 	printf("%13d",jobDataInput.maxFault);
@@ -110,12 +118,11 @@ int jobStopped(int idInput){
 	for(int i = 0; i < JOB_LIST_SIZE; i++){
 		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
 			jobList[i].state = STOPPED;
-			return 1;
 		}
 	}
 
 	for(int i = 0; i < ALL_JOB_SIZE; i++){
-		if(allJobs[i].jid == idInput || jobList[i].pid == idInput){
+		if(allJobs[i].jid == idInput || allJobs[i].pid == idInput){
 			allJobs[i].state = STOPPED;
 			return 1;
 		}
@@ -123,8 +130,9 @@ int jobStopped(int idInput){
 	return 0;
 }
 int jobExit(int idInput){
+	printf("there");
 	for(int i = 0; i < ALL_JOB_SIZE; i++){
-		if(allJobs[i].jid == idInput || jobList[i].pid == idInput){
+		if(allJobs[i].jid == idInput || allJobs[i].pid == idInput){
 			allJobs[i].state = EXIT;
 			return 1;
 		}
