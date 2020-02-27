@@ -1,23 +1,31 @@
-.TH man 8 "24 Feb 2020" "1.0" "lsh man page"
+.TH man 7 "24 Feb 2020" "1.0" "lsh man page"
 .SH NAME
 lsh - Lafayette Shell
 .SH DESCRIPTION
 lafayette shell constains basic linux bash commands. It also supports processes control, pipline and job switches.
 .SH SETTING UP
-To set up the lsh: run the following command in the project src directory:
-    	|-------------------------------
-    	| > make shell
-    	| .
-    	| .
-    	| .
-	|-------------------------------
+To set up the lsh: run the ">make shell" command in the project src directory. Then
+
 .SH BUGS
 No known bugs.
 .SH AUTHOR
 zhouj@lafayette.edu, quif@lafayette.edu
 
+.SH BUILD-IN
 .B jsum
-reports process statistics on each external command (job) completed since the shell started.
+
+Reports process statistics on each external command (job) completed since the shell started.
 
 .B jobs
-lists all background and suspended jobs
+
+Lists all background and suspended jobs
+
+.B =
+
+Set a environment variable to a given value by saying variableName=value. Remove environment variables by saying variableName=.
+
+.B $
+
+Substitutes the value of an environment variable into the command line after $. For example, echo $PATH command will print the value of the PATH environment variable. 
+
+

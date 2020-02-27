@@ -23,12 +23,14 @@ int bg;              /* Should the job run in bg or fg? */
 void SIGINT_handler(int sig){
     printf("pid in sig handler: %d, called in %d\n", pid, getpid());
     Kill(pid, sig);
+    jobStopped(pid);
     
 }
 
 void SIGTSTP_handler(int sig){
     printf("pid in sig handler: %d\n", pid);
     Kill(pid, sig);
+    jobExit(pid);
 }
 
 // void SIGCHLD_handler(int sig){
@@ -124,7 +126,7 @@ void eval(char *cmdline)
     	/* Parent waits for foreground job to terminate */
     	if (!bg) {
             int status;
-            if (waitpid(pid, &status, 0) < 0)
+            if (waitpid(pid, &status, WUNTRACED) < 0)
                 unix_error("waitfg: waitpid error");
             deleteJob(pid);
         }

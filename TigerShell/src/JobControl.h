@@ -2,9 +2,11 @@
 #define __JOBCTRL_H__
 
 #define JOB_LIST_SIZE 50
+#define ALL_JOB_SIZE 50
 #define JOB_COMMAND_SIZE 20
 #define RUNNING 1
 #define STOPPED 2
+#define EXIT 3
 
 #include <time.h>
 #include <string.h>
@@ -36,6 +38,9 @@ int testPrint(int input);
 
 int printJsum(jobData jobDataInput);
 int jsum();
+
+int jobStopped(int idInput);
+int jobExit(int idInput);
 
 
 

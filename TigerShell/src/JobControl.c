@@ -2,8 +2,8 @@
 #include <stdio.h>
 
 int nextJid = 1;
-jobData jobList[50];
-jobData allJobs[100];
+jobData jobList[JOB_LIST_SIZE];
+jobData allJobs[ALL_JOB_SIZE];
 
 
 int addJob(int jidInput, int pidInput, char* commandInput){
@@ -104,6 +104,32 @@ int jsum(){
   	} 
 	return 0;
 
+}
+
+int jobStopped(int idInput){
+	for(int i = 0; i < JOB_LIST_SIZE; i++){
+		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
+			jobList[i].state = STOPPED;
+			return 1;
+		}
+	}
+
+	for(int i = 0; i < ALL_JOB_SIZE; i++){
+		if(allJobs[i].jid == idInput || jobList[i].pid == idInput){
+			allJobs[i].state = STOPPED;
+			return 1;
+		}
+	}
+	return 0;
+}
+int jobExit(int idInput){
+	for(int i = 0; i < ALL_JOB_SIZE; i++){
+		if(allJobs[i].jid == idInput || jobList[i].pid == idInput){
+			allJobs[i].state = EXIT;
+			return 1;
+		}
+	}
+	return 0;
 }
 
 
