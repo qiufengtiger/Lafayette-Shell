@@ -30,6 +30,7 @@ extern int nextJid;
 
 int addJob(int jidInput, int pidInput, char* commandInput);
 int deleteJob(int idInput);
+int continueJob(int idInput);
 int jobs();
 int printJob(jobData jobDataInput);
 int findAvailable();

@@ -37,6 +37,22 @@ int deleteJob(int idInput){
 	return 0;
 }
 
+int continueJob(int idInput){
+	for(int i = 0; i < JOB_LIST_SIZE; i++){
+		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
+			jobList[i].state = RUNNING;
+		}
+	}
+
+	for(int i = 0; i < ALL_JOB_SIZE; i++){
+		if(allJobs[i].jid == idInput || allJobs[i].pid == idInput){
+			allJobs[i].state = RUNNING;
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int printJob(jobData jobDataInput){ 
 	printf("%10d",jobDataInput.jid);
 	printf("%10d",jobDataInput.pid);
