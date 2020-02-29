@@ -99,7 +99,7 @@ Jobs are child processes created directly by the shell.  Each job is identified 
     |I want 2!
     |------------------
 
-\SH JSUM
+.SH JSUM
 
 This is a detailed process statistics on each external command (job) completed since the shell started. The table includes: 
 
