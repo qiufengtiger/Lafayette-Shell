@@ -23,15 +23,18 @@ int execStatus;
 int status;
 
 void SIGINT_handler(int sig){
-    if(!bg){
+    // printf("pid: %d\n", pid);
+    if(!bg && pid != getpid() && pid != 0){
         printf("pid in sig handler: %d, called in %d\n", pid, getpid());
         Kill(pid, sig);
         jobExit(pid);
+        deleteJob(pid);
     }
 }
 
 void SIGTSTP_handler(int sig){
-    if(!bg){
+    // printf("bg: %d\n", bg);
+    if(!bg && pid != getpid() && pid != 0){
         printf("pid in sig handler: %d\n", pid);
         Kill(pid, sig);
         jobStopped(pid);
@@ -40,14 +43,11 @@ void SIGTSTP_handler(int sig){
 }
 
 // void SIGCHLD_handler(int sig){
-// //     // while(waitpid((pid_t)(-1), &status, WNOHANG) > 0){
-
-// //     // }
 //     printf("SIGCHLD pid: %d\n", pid);
-//     int status;
-//     waitpid(pid, &status, 0);
-//     printf("%d\n", status);
-//     if(WIFEXITED(status)){
+//     int thisStatus;
+//     // waitpid(pid, &status, 0);
+//     if(WIFEXITED(status) && !WIFSTOPPED(status)){
+//         printf("exit detected! pid: %d\n", pid);
 //         jobExit(pid);   
 //     }
 // }
@@ -81,7 +81,9 @@ void eval(char *cmdline)
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */  
     strcpy(buf, cmdline);
-    bg = parseline(buf, argv);
+    // store this bg regardless of command type
+    // overwrite bg only when not builtin job
+    int thisBg = parseline(buf, argv);
     if (argv[0] == NULL)  
         return;   /* Ignore empty lines */    
     int pipepos = -1;
@@ -102,14 +104,6 @@ void eval(char *cmdline)
             break;
     }
 
-    // for(int i = 8; i > 0; i--){
-	   //  if(argv[i]!= NULL && !strcmp(argv[i], "|")){
-    //         printf("argv %d: %s\n", i, argv[i]);
-		  //   pipepos = i;
-	   //  } 
-    // }
-
-    // printf("0000\n");
     if(pipepos != -1){
         int fdpipes[2];
 	    if(pipe(fdpipes) == -1){
@@ -161,6 +155,7 @@ void eval(char *cmdline)
         return ;
     }
     if (!builtin_command(argv)) { 
+        bg = thisBg;
         jid = assignJid();
         if ((pid = Fork()) == 0) {
             if(argv[1] != NULL && *argv[1] == '$'){
@@ -187,21 +182,22 @@ void eval(char *cmdline)
         // parent job
         else{
             if(execStatus >= 0)
+                printf("job added %s\n", argv[0]);
                 addJob(jid, pid, argv[0]);
         }
 
     	/* Parent waits for foreground job to terminate */
     	if (!bg) {
             
-            if (waitpid(pid, &status, WUNTRACED) < 0)
+            if(waitpid(pid, &status, WUNTRACED) < 0)
                 unix_error("waitfg: waitpid error");
+            if(WIFEXITED(status)){
+                printf("exit caught in eval: %d\n", pid);
+                jobExit(pid);
+            }
             deleteJob(pid);
+            
         }
-        // else{
-        //     waitpid(pid, &status, WNOHANG);
-        // }
-        // printf("parent job wait skipped complete\n");
-	    
     }
     return;
 }
@@ -239,19 +235,41 @@ int builtin_command(char **argv)
         return 1;
     }
     else if(!strcmp(argv[0], "fg")){
-        pid = atoi(argv[1]);
+        char *perSignPos = NULL;
+        char newPidInput[(int)strlen(argv[1]) + 1];
+        perSignPos = strchr(argv[1], '%');
+        // read pid or jid
+        if(perSignPos != NULL){
+            strcpy(newPidInput, perSignPos + 1);
+            pid = atoi(newPidInput);
+        }
+        else{
+            pid = atoi(argv[1]);
+        }      
+        pid = continueJob(pid);
+        // printf("%d\n", pid);
         setpgid(pid, getpgid(getpid()));
-        continueJob(pid);
-        Kill(-1 * pid, SIGCONT);
+        bg = 0;
+        Kill(pid, SIGCONT);
         waitpid(pid, &status, WUNTRACED);
         return 1;
     }
     else if(!strcmp(argv[0], "bg")){
+        char *perSignPos = NULL;
+        char newPidInput[(int)strlen(argv[1]) + 1];
+        perSignPos = strchr(argv[1], '%');
+        // read pid or jid
+        if(perSignPos != NULL){
+            strcpy(newPidInput, perSignPos + 1);
+            pid = atoi(newPidInput);
+        }
+        else{
+            pid = atoi(argv[1]);
+        }      
+        pid = continueJob(pid);
+        setpgid(pid, 0);
         bg = 1;
-        pid_t targetPid = atoi(argv[1]);
-        continueJob(pid);
-        setpgid(targetPid, 0);
-        Kill(-1 * pid, SIGCONT);
+        Kill(pid, SIGCONT);
         return 1;
     }
     /* quit */

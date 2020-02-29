@@ -29,8 +29,11 @@ int deleteJob(int idInput){
 	int i = 0;
 	for(i = 0; i < JOB_LIST_SIZE; i++){
 		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
-			if(jobList[i].state != STOPPED)
+			if(jobList[i].state == EXIT){
+
+				printf("deleted: %d\n", jobList[i].pid);
 				jobList[i].jid = 0; // jid = 0 will be seen as empty
+			}
 			return 1;
 		}
 	}
@@ -38,19 +41,21 @@ int deleteJob(int idInput){
 }
 
 int continueJob(int idInput){
+	int pid = 0;
 	for(int i = 0; i < JOB_LIST_SIZE; i++){
 		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
 			jobList[i].state = RUNNING;
+			pid = jobList[i].pid;
 		}
 	}
 
 	for(int i = 0; i < ALL_JOB_SIZE; i++){
 		if(allJobs[i].jid == idInput || allJobs[i].pid == idInput){
 			allJobs[i].state = RUNNING;
-			return 1;
+			break;
 		}
 	}
-	return 0;
+	return pid;
 }
 
 int printJob(jobData jobDataInput){ 
@@ -105,14 +110,14 @@ int printJsum(jobData jobDataInput){
 
 	remained = remained-minutes*60;
 	printf("%10d",jobDataInput.pid);
-	if (jobDataInput.state == RUNNING){
+	if (jobDataInput.state == RUNNING || jobDataInput.state == EXIT){
 		printf("%10s","ok");
 	}
 	else if(jobDataInput.state == STOPPED){
 		printf("%10s","STOPPED");
 	}
 	else{
-		printf("%10s","EXIT");
+		printf("%10s","ERROR");
 	}
 	printf("%15d:%d:%d",hours,minutes,remained);
 	printf("%13d",jobDataInput.minFault);
@@ -154,10 +159,17 @@ int jobStopped(int idInput){
 	}
 	return 0;
 }
+
 int jobExit(int idInput){
-	printf("there");
+	for(int i = 0; i < JOB_LIST_SIZE; i++){
+		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
+			jobList[i].state = EXIT;
+		}
+	}
+
 	for(int i = 0; i < ALL_JOB_SIZE; i++){
 		if(allJobs[i].jid == idInput || allJobs[i].pid == idInput){
+			printf("exit stated written: %d\n", idInput);
 			allJobs[i].state = EXIT;
 			return 1;
 		}
