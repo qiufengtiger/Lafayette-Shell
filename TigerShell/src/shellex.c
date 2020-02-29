@@ -39,18 +39,18 @@ void SIGTSTP_handler(int sig){
     
 }
 
-void SIGCHLD_handler(int sig){
-//     // while(waitpid((pid_t)(-1), &status, WNOHANG) > 0){
+// void SIGCHLD_handler(int sig){
+// //     // while(waitpid((pid_t)(-1), &status, WNOHANG) > 0){
 
-//     // }
-    printf("SIGCHLD pid: %d\n", pid);
-    int status;
-    waitpid(pid, &status, 0);
-    printf("%d\n", status);
-    if(WIFEXITED(status)){
-        deleteJob(pid);    
-    }
-}
+// //     // }
+//     printf("SIGCHLD pid: %d\n", pid);
+//     int status;
+//     waitpid(pid, &status, 0);
+//     printf("%d\n", status);
+//     if(WIFEXITED(status)){
+//         jobExit(pid);   
+//     }
+// }
 
 
 int main() 
@@ -58,7 +58,7 @@ int main()
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z  
-    signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
+    // signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
 
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
@@ -83,59 +83,82 @@ void eval(char *cmdline)
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
     if (argv[0] == NULL)  
-	return;   /* Ignore empty lines */    
+        return;   /* Ignore empty lines */    
     int pipepos = -1;
-    for(int i = 8; i > 0; i--){
-	   if(argv[i]!= NULL && !strcmp(argv[i], "|")){
-		pipepos = i;
-	   } 
+    // printf("0001\n");
 
+    int i = 0;
+
+    for(i = 0; ; i++){
+        // printf("argv %d : %s\n", i, argv[i]);
+        if(argv[i] == NULL){
+            break;
+        }
+        if(*argv[i] == '|'){
+            pipepos = i;
+            break;
+        }
+        if(i > 8)
+            break;
     }
 
-    if(pipepos!=-1){
-           int fdpipes[2];
-	   if(pipe(fdpipes) == -1){
-		printf("failed to create pipe");
-		exit(1);
-	   }
-	   char* firstCommand[4];
-	   char* secondCommand[4];
-	   for(int i = 0; i<pipepos; i++){
-		firstCommand[i] = argv[i];
-		printf("%s\n",argv[i]);
-	   }
-	   for(int i = pipepos+1; i<8; i++){
-		
-		secondCommand[i-pipepos-1] = argv[i];
-	   }
+    // for(int i = 8; i > 0; i--){
+	   //  if(argv[i]!= NULL && !strcmp(argv[i], "|")){
+    //         printf("argv %d: %s\n", i, argv[i]);
+		  //   pipepos = i;
+	   //  } 
+    // }
+
+    // printf("0000\n");
+    if(pipepos != -1){
+        int fdpipes[2];
+	    if(pipe(fdpipes) == -1){
+	        printf("failed to create pipe");
+		    exit(1);
+	    }
+	    char* firstCommand[4];
+	    char* secondCommand[4];
+        // printf("1111\n");
+	    for(int i = 0; i < pipepos; i++){
+		    firstCommand[i] = argv[i];
+		    printf("%s\n",argv[i]);
+	    }
+        // printf("2222\n");
+	    for(int i = pipepos + 1; i < 8; i++){
+            if(argv[i] == NULL)
+                break;
+		    secondCommand[i - pipepos - 1] = argv[i];
+            printf("%s\n",argv[i]);
+	    }
 	   
-	   pid_t pid_parent = fork();
+	    pid_t pid_parent = fork();
 
 
-	   if(pid_parent == 0){
-	   	dup2(fdpipes[1], STDOUT_FILENO);
-		close(fdpipes[0]); 
-		close(fdpipes[1]); 
-	   	execvp(firstCommand[0],firstCommand);
-           	return ;}
+	    if(pid_parent == 0){
+	   	    dup2(fdpipes[1], STDOUT_FILENO);
+		    close(fdpipes[0]); 
+		    close(fdpipes[1]); 
+	   	    execvp(firstCommand[0], firstCommand);
+           	return ;
+        }
 
 	
 	   
-	   pid_t pid_child = fork();
+	    pid_t pid_child = fork();
 
 
-	   if(pid_child == 0){
-	   	dup2(fdpipes[0], STDIN_FILENO);
-		close(fdpipes[0]); 
-		close(fdpipes[1]); 
-	   	execvp(secondCommand[0],secondCommand);
-		
-           	return ;}
+	    if(pid_child == 0){
+	   	    dup2(fdpipes[0], STDIN_FILENO);
+		    close(fdpipes[0]); 
+		    close(fdpipes[1]); 
+	   	    execvp(secondCommand[0],secondCommand);
+           	return ;
+        }
 
-	   close(fdpipes[0]);
-   	   close(fdpipes[1]); 
-	   while (wait(NULL) > 0);
-           return ;
+	    close(fdpipes[0]);
+   	    close(fdpipes[1]); 
+	    while (wait(NULL) > 0);
+        return ;
     }
     if (!builtin_command(argv)) { 
         jid = assignJid();
