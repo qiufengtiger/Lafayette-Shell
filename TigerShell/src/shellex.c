@@ -84,7 +84,59 @@ void eval(char *cmdline)
     bg = parseline(buf, argv);
     if (argv[0] == NULL)  
 	return;   /* Ignore empty lines */    
+    int pipepos = -1;
+    for(int i = 8; i > 0; i--){
+	   if(argv[i]!= NULL && !strcmp(argv[i], "|")){
+		pipepos = i;
+	   } 
 
+    }
+
+    if(pipepos!=-1){
+           int fdpipes[2];
+	   if(pipe(fdpipes) == -1){
+		printf("failed to create pipe");
+		exit(1);
+	   }
+	   char* firstCommand[4];
+	   char* secondCommand[4];
+	   for(int i = 0; i<pipepos; i++){
+		firstCommand[i] = argv[i];
+		printf("%s\n",argv[i]);
+	   }
+	   for(int i = pipepos+1; i<8; i++){
+		
+		secondCommand[i-pipepos-1] = argv[i];
+	   }
+	   
+	   pid_t pid_parent = fork();
+
+
+	   if(pid_parent == 0){
+	   	dup2(fdpipes[1], STDOUT_FILENO);
+		close(fdpipes[0]); 
+		close(fdpipes[1]); 
+	   	execvp(firstCommand[0],firstCommand);
+           	exit(1) ;}
+
+	
+	   
+	   pid_t pid_child = fork();
+
+
+	   if(pid_child == 0){
+	   	dup2(fdpipes[0], STDIN_FILENO);
+		close(fdpipes[0]); 
+		close(fdpipes[1]); 
+	   	execvp(secondCommand[0],secondCommand);
+		
+           	exit(1) ;}
+
+	   close(fdpipes[0]);
+   	   close(fdpipes[1]); 
+	   while (wait(NULL) > 0);
+           return ;
+    }
     if (!builtin_command(argv)) { 
         jid = assignJid();
         if ((pid = Fork()) == 0) {
