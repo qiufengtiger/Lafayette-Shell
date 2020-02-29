@@ -21,15 +21,15 @@ pid_t thisPid = -1; // current process jid
 int pid; // child process pid
 int jid; // child process jid
 int bg;
-int execStatus;
+int execStatus = 1;
 int status;
 
 void SIGINT_handler(int sig){
     // printf("pid: %d\n", pid);
     if(!bg && pid != getpid() && pid != 0){
-        printf("pid in sig handler: %d, called in %d\n", pid, getpid());
+        printf("Termination Signal Caught for Pid: %d.\n", pid);
         Kill(pid, sig);
-        jobExit(pid);
+        jobAbort(pid);
         deleteJob(pid);
     }
 }
@@ -37,7 +37,7 @@ void SIGINT_handler(int sig){
 void SIGTSTP_handler(int sig){
     // printf("bg: %d\n", bg);
     if(!bg && pid != getpid() && pid != 0){
-        printf("pid in sig handler: %d\n", pid);
+        printf("Stop Signal Caught for Pid: %d.\n", pid);
         Kill(pid, sig);
         jobStopped(pid);
     }
@@ -162,7 +162,7 @@ void eval(char *cmdline)
 	    close(fdpipes[0]);
    	    close(fdpipes[1]); 
 	    while (wait(NULL) > 0);
-        return ;
+        return;
     }
     if (!builtin_command(argv)) { 
         bg = thisBg;
@@ -186,20 +186,25 @@ void eval(char *cmdline)
             execStatus = execvp(argv[0], argv);
             if (execStatus < 0) {
                 printf("%s: Command not found.\n", argv[0]);
-                exit(0);
+                exit(1); // exit code = 1
             }
         }
         // parent job
         else{
-            if(execStatus >= 0)
-                printf("job added %s\n", argv[0]);
-                addJob(jid, pid, argv[0]);
+            // if(execStatus > 0)
+            addJob(jid, pid, argv[0]);
+            // else
+                // printf("error\n");
+            // else{
+                // printf("%s\n", argv[0]);
+                // addError(jid, pid, argv[0]);
+            // }
         }
 
     	/* Parent waits for foreground job to terminate */
 	
-	struct rusage usage;
-	getrusage(RUSAGE_SELF, &usage);
+	    struct rusage usage;
+	    getrusage(RUSAGE_SELF, &usage);
     	int beginMin = usage.ru_minflt;
     	int beginMaj = usage.ru_majflt; 
 
@@ -209,16 +214,23 @@ void eval(char *cmdline)
             if(waitpid(pid, &status, WUNTRACED) < 0)
                 unix_error("waitfg: waitpid error");
             if(WIFEXITED(status)){
-                printf("exit caught in eval: %d\n", pid);
-                jobExit(pid);
+                if(WEXITSTATUS(status) == 1){
+                    printf("Error: pid %d\n", pid);
+                    changeStatusError(pid);
+                }
+                else if(!WIFSIGNALED(status)){
+                    printf("Job Terminated Without CTRL-C. Id: %d\n", pid);
+                    jobExit(pid);
+                }
             }
+            
             deleteJob(pid);
             
         }
-	getrusage(RUSAGE_SELF, &usage);
+	    getrusage(RUSAGE_SELF, &usage);
     	//printf("min%li\n",usage.ru_minflt-beginMin);
     	//printf("max%li\n",usage.ru_majflt-beginMaj);
-	setPageFault(jid, usage.ru_minflt-beginMin, usage.ru_majflt-beginMaj);
+        setPageFault(jid, usage.ru_minflt-beginMin, usage.ru_majflt-beginMaj);
     }
     return;
 }

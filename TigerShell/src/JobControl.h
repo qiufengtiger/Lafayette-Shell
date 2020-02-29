@@ -7,6 +7,8 @@
 #define RUNNING 1
 #define STOPPED 2
 #define EXIT 3
+#define ABORT 4
+#define ERROR 5
 
 #include <time.h>
 #include <string.h>
@@ -29,6 +31,7 @@ extern jobData jobList[JOB_LIST_SIZE];
 extern int nextJid;
 
 int addJob(int jidInput, int pidInput, char* commandInput);
+int changeStatusError(int idInput);
 int deleteJob(int idInput);
 int continueJob(int idInput);
 int jobs();
@@ -42,6 +45,7 @@ int jsum();
 
 int jobStopped(int idInput);
 int jobExit(int idInput);
+int jobAbort(int idInput);
 
 int setPageFault(int jid, long int min, long int maj);
 
