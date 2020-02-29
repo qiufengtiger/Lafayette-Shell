@@ -43,7 +43,8 @@ int jsum();
 int jobStopped(int idInput);
 int jobExit(int idInput);
 
+int setPageFault(int jid, long int min, long int maj);
+
 
 
 #endif
-
