@@ -137,14 +137,14 @@ void eval(char *cmdline)
 		    close(fdpipes[1]); 
 	
 	   	    execvp(firstCommand[0], firstCommand);
-           	    return ;
-             }
+           	return ;
+        }
 	     
-             addJob(jid, pid, firstCommand[0]);
-
-	
+        addJob(jid, pid_parent, firstCommand[0]);
+        jobExit(pid_parent);
+        deleteJob(pid_parent);
 	    
-            jid = assignJid();
+        jid = assignJid();
 	    pid_t pid_child = fork();
 
 
@@ -154,9 +154,10 @@ void eval(char *cmdline)
 		    close(fdpipes[1]); 
 	   	    execvp(secondCommand[0],secondCommand);
            	return ;
-            }
-	    
-            addJob(jid, pid, secondCommand[0]);
+        }
+        addJob(jid, pid_child, secondCommand[0]);
+        jobExit(pid_child);
+        deleteJob(pid_child);
 
 	    close(fdpipes[0]);
    	    close(fdpipes[1]); 
