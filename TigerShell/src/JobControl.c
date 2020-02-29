@@ -119,7 +119,26 @@ int printJsum(jobData jobDataInput){
 	else{
 		printf("%10s","ERROR");
 	}
-	printf("%15d:%d:%d",hours,minutes,remained);
+
+
+	if(hours<10){
+		printf("%14d:",hours);
+	}
+	else{
+		printf("%14d:",hours);
+	}
+	if(minutes<10){
+		printf("0%d:",minutes);
+	} 
+	else{
+		printf("%d:",minutes);
+	}
+	if(remained<10){
+		printf("0%d",remained);
+	}
+	else{
+		printf("%d",remained);
+	}
 	printf("%13d",jobDataInput.minFault);
 	printf("%13d",jobDataInput.maxFault);
 	printf("%15s\n",jobDataInput.commandName);
@@ -177,5 +196,12 @@ int jobExit(int idInput){
 	return 0;
 }
 
+int setPageFault(int jid, long int minPF, long int majPF){
+	allJobs[jid].minFault = minPF;
+	allJobs[jid].maxFault = majPF;
+	return 0;
+
+
+}
 
 
