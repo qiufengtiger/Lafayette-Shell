@@ -3,6 +3,8 @@
 #include "JobControl.h"
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
 
 #define MAXARGS   128
 
@@ -124,7 +126,8 @@ void eval(char *cmdline)
 		    secondCommand[i - pipepos - 1] = argv[i];
             printf("%s\n",argv[i]);
 	    }
-	   
+	    
+	    jid = assignJid();
 	    pid_t pid_parent = fork();
 
 
@@ -132,12 +135,16 @@ void eval(char *cmdline)
 	   	    dup2(fdpipes[1], STDOUT_FILENO);
 		    close(fdpipes[0]); 
 		    close(fdpipes[1]); 
+	
 	   	    execvp(firstCommand[0], firstCommand);
-           	return ;
-        }
+           	    return ;
+             }
+	     
+             addJob(jid, pid, firstCommand[0]);
 
 	
-	   
+	    
+            jid = assignJid();
 	    pid_t pid_child = fork();
 
 
@@ -147,7 +154,9 @@ void eval(char *cmdline)
 		    close(fdpipes[1]); 
 	   	    execvp(secondCommand[0],secondCommand);
            	return ;
-        }
+            }
+	    
+            addJob(jid, pid, secondCommand[0]);
 
 	    close(fdpipes[0]);
    	    close(fdpipes[1]); 
@@ -187,6 +196,13 @@ void eval(char *cmdline)
         }
 
     	/* Parent waits for foreground job to terminate */
+	
+	struct rusage usage;
+	getrusage(RUSAGE_SELF, &usage);
+    	int beginMin = usage.ru_minflt;
+    	int beginMaj = usage.ru_majflt; 
+
+
     	if (!bg) {
             
             if(waitpid(pid, &status, WUNTRACED) < 0)
@@ -198,6 +214,10 @@ void eval(char *cmdline)
             deleteJob(pid);
             
         }
+	getrusage(RUSAGE_SELF, &usage);
+    	//printf("min%li\n",usage.ru_minflt-beginMin);
+    	//printf("max%li\n",usage.ru_majflt-beginMaj);
+	setPageFault(jid, usage.ru_minflt-beginMin, usage.ru_majflt-beginMaj);
     }
     return;
 }
