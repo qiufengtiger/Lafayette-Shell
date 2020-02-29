@@ -27,8 +27,8 @@ int status;
 void SIGINT_handler(int sig){
     // printf("pid: %d\n", pid);
     if(!bg && pid != getpid() && pid != 0){
-        printf("Termination Signal Caught for Pid: %d.\n", pid);
-        Kill(pid, sig);
+        printf("[Termination Signal Caught for Pid: %d.]\n", pid);
+        Kill(-pid, sig);
         jobAbort(pid);
         deleteJob(pid);
     }
@@ -37,8 +37,8 @@ void SIGINT_handler(int sig){
 void SIGTSTP_handler(int sig){
     // printf("bg: %d\n", bg);
     if(!bg && pid != getpid() && pid != 0){
-        printf("Stop Signal Caught for Pid: %d.\n", pid);
-        Kill(pid, sig);
+        printf("[Stop Signal Caught for Pid: %d.\n]", pid);
+        Kill(-pid, sig);
         jobStopped(pid);
     }
     
@@ -180,12 +180,12 @@ void eval(char *cmdline)
                 argv[2] = NULL;
                 argv[3] = NULL;
             }
-            if(bg){
+            // if(bg){
                 setpgid(getpid(), 0);
-            }
+            // }
             execStatus = execvp(argv[0], argv);
             if (execStatus < 0) {
-                printf("%s: Command not found.\n", argv[0]);
+                printf("[%s: Command not found.]\n", argv[0]);
                 exit(1); // exit code = 1
             }
         }
@@ -215,11 +215,11 @@ void eval(char *cmdline)
                 unix_error("waitfg: waitpid error");
             if(WIFEXITED(status)){
                 if(WEXITSTATUS(status) == 1){
-                    printf("Error: pid %d\n", pid);
+                    printf("[Error: pid %d]\n", pid);
                     changeStatusError(pid);
                 }
                 else if(!WIFSIGNALED(status)){
-                    printf("Job Terminated Without CTRL-C. Id: %d\n", pid);
+                    printf("[Job Terminated Without CTRL-C. Id: %d]\n", pid);
                     jobExit(pid);
                 }
             }
@@ -255,7 +255,7 @@ int builtin_command(char **argv)
         }
         setenv(desName, srcName, 1);
 
-        printf("%s\n", "success");
+        printf("%s\n", "[success]");
         return 1;
     }
     /* jobs */
