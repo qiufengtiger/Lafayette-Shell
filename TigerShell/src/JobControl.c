@@ -29,9 +29,24 @@ int deleteJob(int idInput){
 	int i = 0;
 	for(i = 0; i < JOB_LIST_SIZE; i++){
 		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
-			if (jobList[i].state == EXIT){
+			if(jobList[i].state != STOPPED)
 				jobList[i].jid = 0; // jid = 0 will be seen as empty
-			}
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int continueJob(int idInput){
+	for(int i = 0; i < JOB_LIST_SIZE; i++){
+		if(jobList[i].jid == idInput || jobList[i].pid == idInput){
+			jobList[i].state = RUNNING;
+		}
+	}
+
+	for(int i = 0; i < ALL_JOB_SIZE; i++){
+		if(allJobs[i].jid == idInput || allJobs[i].pid == idInput){
+			allJobs[i].state = RUNNING;
 			return 1;
 		}
 	}
@@ -149,5 +164,6 @@ int jobExit(int idInput){
 	}
 	return 0;
 }
+
 
 

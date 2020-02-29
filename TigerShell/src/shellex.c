@@ -18,23 +18,39 @@ int thisJid = -1; // current process pid
 pid_t thisPid = -1; // current process jid
 int pid; // child process pid
 int jid; // child process jid
-int bg;              /* Should the job run in bg or fg? */
+int bg;
+int execStatus;
+int status;
 
 void SIGINT_handler(int sig){
-    printf("pid in sig handler: %d, called in %d\n", pid, getpid());
-    Kill(pid, sig);
-    jobExit(pid);
+    if(!bg){
+        printf("pid in sig handler: %d, called in %d\n", pid, getpid());
+        Kill(pid, sig);
+        jobExit(pid);
+    }
 }
 
 void SIGTSTP_handler(int sig){
-    printf("pid in sig handler: %d\n", pid);
-    Kill(pid, sig);
-    jobStopped(pid);
+    if(!bg){
+        printf("pid in sig handler: %d\n", pid);
+        Kill(pid, sig);
+        jobStopped(pid);
+    }
+    
 }
 
-// void SIGCHLD_handler(int sig){
+void SIGCHLD_handler(int sig){
+//     // while(waitpid((pid_t)(-1), &status, WNOHANG) > 0){
 
-// }
+//     // }
+    printf("SIGCHLD pid: %d\n", pid);
+    int status;
+    waitpid(pid, &status, 0);
+    printf("%d\n", status);
+    if(WIFEXITED(status)){
+        deleteJob(pid);    
+    }
+}
 
 
 int main() 
@@ -42,7 +58,7 @@ int main()
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
     signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z  
-    // signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
+    signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
 
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
@@ -67,32 +83,69 @@ void eval(char *cmdline)
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
     if (argv[0] == NULL)  
-	return;   /* Ignore empty lines */    
+	return;   /* Ignore empty lines */     
+    int pipepos = -1;
+    for(int i = 8; i > 0; i--){
+	   if(argv[i]!= NULL && !strcmp(argv[i], "|")){
+		pipepos = i;
+	   } 
+
+    }
+
+    if(pipepos!=-1){
+           int fdpipes[2];
+	   if(pipe(fdpipes) == -1){
+		printf("failed to create pipe");
+		exit(1);
+	   }
+	   char* firstCommand[4];
+	   char* secondCommand[4];
+	   for(int i = 0; i<pipepos; i++){
+		firstCommand[i] = argv[i];
+		printf("%s\n",argv[i]);
+	   }
+	   for(int i = pipepos+1; i<8; i++){
+		
+		secondCommand[i-pipepos-1] = argv[i];
+	   }
+	   
+	   pid_t pid_parent = fork();
+
+
+	   if(pid_parent == 0){
+	   	dup2(fdpipes[1], STDOUT_FILENO);
+		close(fdpipes[0]); 
+		close(fdpipes[1]); 
+	   	execvp(firstCommand[0],firstCommand);
+           	exit(1) ;}
+
+	
+	   
+	   pid_t pid_child = fork();
+
+
+	   if(pid_child == 0){
+	   	dup2(fdpipes[0], STDIN_FILENO);
+		close(fdpipes[0]); 
+		close(fdpipes[1]); 
+	   	execvp(secondCommand[0],secondCommand);
+		
+           	exit(1) ;}
+
+	   close(fdpipes[0]);
+   	   close(fdpipes[1]); 
+	   while (wait(NULL) > 0);
+           return ;
+    }
 
     if (!builtin_command(argv)) { 
         jid = assignJid();
         if ((pid = Fork()) == 0) {
-            // signal(SIGINT, SIGINT_handler_child); // CTRL-C
-            // signal(SIGTSTP, SIGTSTP_handler_child); // CTRL-Z     
-
-            // if(shutdownFlag == 1){
-            //     printf("pid %d killed received in process\n", pid);
-            //     exit(0);
-            // }
-            // else if(shutdownFlag == 2){
-            //     printf("pid %d stopped received\n", pid);
-            //     Kill(0 - (int)pid, SIGTSTP);
-            // }
-   
-            // printf("Process id: %d created!\n", getpid());   
-            // printf("Job id: %d created!\n", jid);
             if(argv[1] != NULL && *argv[1] == '$'){
-                printf("command1: %s\n", argv[0]);
                 argv[1] = getEnvVariable(argv[1]);
             }
 
             else if(argv[1] != NULL && argv[2] != NULL && *argv[2] == '>'){ // redirect output to file
-                printf("command2: %s\n", argv[0]);
                 int fd = open(argv[3], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 dup2(fd, 1);
                 dup2(fd, 2);
@@ -100,36 +153,31 @@ void eval(char *cmdline)
                 argv[2] = NULL;
                 argv[3] = NULL;
             }
-
-            // printf("bg: %d\n", bg);
             if(bg){
-                // printf("pgid1: %d\n", getpgid(getpid()));
                 setpgid(getpid(), 0);
-                // printf("pgid2: %d\n", getpgid(getpid()));
             }
-            // printf("command: %s\n", argv[0]);
-            if (execvp(argv[0], argv) < 0) {
+            execStatus = execvp(argv[0], argv);
+            if (execStatus < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
             }
         }
         // parent job
         else{
-            // if(bg){
-            //     printf("bg signal sent\n");
-            //     Kill(pid, SIGCONT);
-            // }
-            addJob(jid, pid, argv[0]);
-            // printf("parent job addJob complete\n");
+            if(execStatus >= 0)
+                addJob(jid, pid, argv[0]);
         }
 
     	/* Parent waits for foreground job to terminate */
     	if (!bg) {
-            int status;
+            
             if (waitpid(pid, &status, WUNTRACED) < 0)
                 unix_error("waitfg: waitpid error");
             deleteJob(pid);
         }
+        // else{
+        //     waitpid(pid, &status, WNOHANG);
+        // }
         // printf("parent job wait skipped complete\n");
 	    
     }
@@ -142,7 +190,10 @@ int builtin_command(char **argv)
     char *equalSignPos = NULL;
     
     equalSignPos = strchr(argv[0], '=');
-    
+
+
+
+  
     /* set env variable */
     if(equalSignPos != NULL){
         char desName[equalSignPos - argv[0] + 1];
@@ -169,10 +220,19 @@ int builtin_command(char **argv)
         return 1;
     }
     else if(!strcmp(argv[0], "fg")){
-
+        pid = atoi(argv[1]);
+        setpgid(pid, getpgid(getpid()));
+        continueJob(pid);
+        Kill(-1 * pid, SIGCONT);
+        waitpid(pid, &status, WUNTRACED);
         return 1;
     }
     else if(!strcmp(argv[0], "bg")){
+        bg = 1;
+        pid_t targetPid = atoi(argv[1]);
+        continueJob(pid);
+        setpgid(targetPid, 0);
+        Kill(-1 * pid, SIGCONT);
         return 1;
     }
     /* quit */
@@ -235,4 +295,5 @@ int assignJid(){
     return nextJid++;
 }
 /* $end parseline */
+
 
