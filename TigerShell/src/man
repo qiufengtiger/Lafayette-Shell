@@ -1,4 +1,4 @@
-.TH lsh 1 "29 February, 2019" "1.0" "TigerShell"
+
 
 .SH NAME
     TigerShell - Lafayette TigerShell
@@ -99,11 +99,7 @@ Jobs are child processes created directly by the shell.  Each job is identified 
     |I want 2!
     |------------------
 
-.SH JSUM
 
-This is a detailed process statistics on each external command (job) completed since the shell started. The table includes: 
-
-1:pid for the process
 
 2:status which can be ok for ended with status 0, error for ended with status other than 0, and abort for terminated 
 
