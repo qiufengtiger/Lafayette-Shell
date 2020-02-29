@@ -117,7 +117,7 @@ void eval(char *cmdline)
 		close(fdpipes[0]); 
 		close(fdpipes[1]); 
 	   	execvp(firstCommand[0],firstCommand);
-           	exit(1) ;}
+           	return ;}
 
 	
 	   
@@ -130,7 +130,7 @@ void eval(char *cmdline)
 		close(fdpipes[1]); 
 	   	execvp(secondCommand[0],secondCommand);
 		
-           	exit(1) ;}
+           	return ;}
 
 	   close(fdpipes[0]);
    	   close(fdpipes[1]); 
@@ -291,5 +291,4 @@ int assignJid(){
     return nextJid++;
 }
 /* $end parseline */
-
 
