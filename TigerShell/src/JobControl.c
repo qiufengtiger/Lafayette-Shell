@@ -233,8 +233,6 @@ int setPageFault(int jid, long int minPF, long int majPF){
 	allJobs[jid].minFault = minPF;
 	allJobs[jid].maxFault = majPF;
 	return 0;
-
-
 }
 
 

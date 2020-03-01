@@ -44,23 +44,11 @@ void SIGTSTP_handler(int sig){
     
 }
 
-// void SIGCHLD_handler(int sig){
-//     printf("SIGCHLD pid: %d\n", pid);
-//     int thisStatus;
-//     // waitpid(pid, &status, 0);
-//     if(WIFEXITED(status) && !WIFSTOPPED(status)){
-//         printf("exit detected! pid: %d\n", pid);
-//         jobExit(pid);   
-//     }
-// }
-
-
 int main() 
 {   
 
     signal(SIGINT, SIGINT_handler); // CTRL-C
-    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z  
-    // signal(SIGCHLD, SIGCHLD_handler); // child termination listener 
+    signal(SIGTSTP, SIGTSTP_handler); // CTRL-Z 
 
     putenv("lshprompt=lsh");
     char cmdline[MAXLINE]; /* Command line */
@@ -89,7 +77,6 @@ void eval(char *cmdline)
     if (argv[0] == NULL)  
         return;   /* Ignore empty lines */    
     int pipepos = -1;
-    // printf("0001\n");
 
     int i = 0;
 
@@ -114,12 +101,10 @@ void eval(char *cmdline)
 	    }
 	    char* firstCommand[4];
 	    char* secondCommand[4];
-        // printf("1111\n");
 	    for(int i = 0; i < pipepos; i++){
 		    firstCommand[i] = argv[i];
 		    printf("%s\n",argv[i]);
 	    }
-        // printf("2222\n");
 	    for(int i = pipepos + 1; i < 8; i++){
             if(argv[i] == NULL)
                 break;
@@ -162,12 +147,14 @@ void eval(char *cmdline)
 	    close(fdpipes[0]);
    	    close(fdpipes[1]); 
 	    while (wait(NULL) > 0);
+        // return immediately after pipe jobs complete
         return;
     }
-    if (!builtin_command(argv)) { 
+    if (!builtin_command(argv)){ 
         bg = thisBg;
         jid = assignJid();
         if ((pid = Fork()) == 0) {
+            // fetch env
             if(argv[1] != NULL && *argv[1] == '$'){
                 argv[1] = getEnvVariable(argv[1]);
             }
@@ -180,10 +167,9 @@ void eval(char *cmdline)
                 argv[2] = NULL;
                 argv[3] = NULL;
             }
-            // if(bg){
-                setpgid(getpid(), 0);
-            // }
+            setpgid(getpid(), 0);
             execStatus = execvp(argv[0], argv);
+            // exec failed
             if (execStatus < 0) {
                 printf("[%s: Command not found.]\n", argv[0]);
                 exit(1); // exit code = 1
@@ -191,14 +177,8 @@ void eval(char *cmdline)
         }
         // parent job
         else{
-            // if(execStatus > 0)
+            // add to job lists
             addJob(jid, pid, argv[0]);
-            // else
-                // printf("error\n");
-            // else{
-                // printf("%s\n", argv[0]);
-                // addError(jid, pid, argv[0]);
-            // }
         }
 
     	/* Parent waits for foreground job to terminate */
@@ -213,12 +193,12 @@ void eval(char *cmdline)
             
             if(waitpid(pid, &status, WUNTRACED) < 0)
                 unix_error("waitfg: waitpid error");
-            if(WIFEXITED(status)){
-                if(WEXITSTATUS(status) == 1){
+            if(WIFEXITED(status)){ // if child exits
+                if(WEXITSTATUS(status) == 1){ // if exits with error
                     printf("[Error: pid %d]\n", pid);
                     changeStatusError(pid);
                 }
-                else if(!WIFSIGNALED(status)){
+                else if(!WIFSIGNALED(status)){ // if exits naturally
                     printf("[Job Terminated Without CTRL-C. Id: %d]\n", pid);
                     jobExit(pid);
                 }
@@ -228,8 +208,6 @@ void eval(char *cmdline)
             
         }
 	    getrusage(RUSAGE_SELF, &usage);
-    	//printf("min%li\n",usage.ru_minflt-beginMin);
-    	//printf("max%li\n",usage.ru_majflt-beginMaj);
         setPageFault(jid, usage.ru_minflt-beginMin, usage.ru_majflt-beginMaj);
     }
     return;
@@ -242,7 +220,7 @@ int builtin_command(char **argv)
     
     equalSignPos = strchr(argv[0], '=');
     
-    /* set env variable */
+    // set env variable
     if(equalSignPos != NULL){
         char desName[equalSignPos - argv[0] + 1];
         char srcName[(int)strlen(argv[0]) - (int)(equalSignPos - argv[0])];
@@ -258,35 +236,37 @@ int builtin_command(char **argv)
         printf("%s\n", "[success]");
         return 1;
     }
-    /* jobs */
+
     else if(!strcmp(argv[0], "jobs")){
         jobs();
         return 1;
     }
+
     else if(!strcmp(argv[0], "jsum")){
         jsum();
         return 1;
     }
+
+    // restart job in fg
     else if(!strcmp(argv[0], "fg")){
         char *perSignPos = NULL;
         char newPidInput[(int)strlen(argv[1]) + 1];
         perSignPos = strchr(argv[1], '%');
         // read pid or jid
         if(perSignPos != NULL){
-            strcpy(newPidInput, perSignPos + 1);
+            strcpy(newPidInput, perSignPos + 1); // get rid of percent sign
             pid = atoi(newPidInput);
         }
         else{
             pid = atoi(argv[1]);
         }      
-        pid = continueJob(pid);
-        // printf("%d\n", pid);
-        setpgid(pid, getpgid(getpid()));
+        pid = continueJob(pid); // change status in jobs list 
         bg = 0;
-        Kill(pid, SIGCONT);
+        Kill(pid, SIGCONT); // send SIGCONT to continue the job
         waitpid(pid, &status, WUNTRACED);
         return 1;
     }
+
     else if(!strcmp(argv[0], "bg")){
         char *perSignPos = NULL;
         char newPidInput[(int)strlen(argv[1]) + 1];
@@ -300,14 +280,14 @@ int builtin_command(char **argv)
             pid = atoi(argv[1]);
         }      
         pid = continueJob(pid);
-        setpgid(pid, 0);
         bg = 1;
         Kill(pid, SIGCONT);
         return 1;
     }
-    /* quit */
+    
     else if(!strcmp(argv[0], "quit"))
 	   exit(0);  
+    
     else if(!strcmp(argv[0], "&"))
 	   return 1;
     /* not a built in command */
