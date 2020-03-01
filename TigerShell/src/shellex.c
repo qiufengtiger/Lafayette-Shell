@@ -1,4 +1,13 @@
-/* $begin shellmain */
+/* 
+CS 406 Project 1: TigerShell
+
+Author:
+Feng Qiu (Tiger): qiuf@lafayette.edu | Github: qiufengtiger
+Jun Zhou: zhouj@lafayette.edu | Github: junezho
+
+Git repo: https://github.com/qiufengtiger/Lafayette-Shell
+*/
+
 #include "csapp.h"
 #include "JobControl.h"
 #include <fcntl.h>
