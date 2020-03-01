@@ -25,7 +25,6 @@ int execStatus = 1;
 int status;
 
 void SIGINT_handler(int sig){
-    // printf("pid: %d\n", pid);
     if(!bg && pid != getpid() && pid != 0){
         printf("[Termination Signal Caught for Pid: %d.]\n", pid);
         Kill(-pid, sig);
@@ -35,9 +34,8 @@ void SIGINT_handler(int sig){
 }
 
 void SIGTSTP_handler(int sig){
-    // printf("bg: %d\n", bg);
     if(!bg && pid != getpid() && pid != 0){
-        printf("[Stop Signal Caught for Pid: %d.\n]", pid);
+        printf("[Stop Signal Caught for Pid: %d.]\n", pid);
         Kill(-pid, sig);
         jobStopped(pid);
     }
@@ -81,7 +79,6 @@ void eval(char *cmdline)
     int i = 0;
 
     for(i = 0; ; i++){
-        // printf("argv %d : %s\n", i, argv[i]);
         if(argv[i] == NULL){
             break;
         }
@@ -96,20 +93,18 @@ void eval(char *cmdline)
     if(pipepos != -1){
         int fdpipes[2];
 	    if(pipe(fdpipes) == -1){
-	        printf("failed to create pipe");
+	        printf("[Failed to Create Pipe]\n");
 		    exit(1);
 	    }
 	    char* firstCommand[4];
 	    char* secondCommand[4];
 	    for(int i = 0; i < pipepos; i++){
 		    firstCommand[i] = argv[i];
-		    printf("%s\n",argv[i]);
 	    }
 	    for(int i = pipepos + 1; i < 8; i++){
             if(argv[i] == NULL)
                 break;
 		    secondCommand[i - pipepos - 1] = argv[i];
-            printf("%s\n",argv[i]);
 	    }
 	    
 	    jid = assignJid();
@@ -199,7 +194,7 @@ void eval(char *cmdline)
                     changeStatusError(pid);
                 }
                 else if(!WIFSIGNALED(status)){ // if exits naturally
-                    printf("[Job Terminated Without CTRL-C. Id: %d]\n", pid);
+                    printf("[Job Terminated Successfully Without CTRL-C. Id: %d]\n", pid);
                     jobExit(pid);
                 }
             }
@@ -233,7 +228,7 @@ int builtin_command(char **argv)
         }
         setenv(desName, srcName, 1);
 
-        printf("%s\n", "[success]");
+        printf("%s\n", "[Env Set Successfully]");
         return 1;
     }
 
